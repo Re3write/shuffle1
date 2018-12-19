@@ -23,7 +23,7 @@ class ConfigAli:
     # lr_dec_epoch=[5,10,14,17,22]
 
 
-    batch_size = 24  #24
+    batch_size = 18  #24
     weight_decay = 1e-5
 
     num_class = 24
