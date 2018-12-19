@@ -1,5 +1,5 @@
 # from .resnet import *
-from .Shuffle_resnet_dr import Shuffle_resnet50
+# from .Shuffle_resnet_dr import Shuffle_resnet50
 from .resnet_dr import *
 import torch.nn as nn
 import torch
@@ -24,8 +24,8 @@ class CPN(nn.Module):
         return global_outs, refine_out
 
 def CPN50(out_size,num_class,pretrained=True):
-    # res50 = resnet50(pretrained=pretrained)
-    res50=Shuffle_resnet50()
+    res50 = resnet50(pretrained=False)
+    # res50=Shuffle_resnet50()
     model = CPN(res50, output_shape=out_size,num_class=num_class, pretrained=pretrained)
     return model
 

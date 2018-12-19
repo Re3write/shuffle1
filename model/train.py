@@ -3,8 +3,10 @@ import argparse
 import time
 import matplotlib.pyplot as plt
 import torch.utils.data
+
 proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import sys
+
 sys.path.append(proj_dir)
 import torch
 import torch.nn.parallel
@@ -33,7 +35,8 @@ from utils.pytorch_utils import CyclicLR
 
 warnings.filterwarnings('ignore')
 
-os.environ['CUDA_VISIBLE_DEVICES']='0,1,2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2'
+
 
 def main(args):
     # create checkpoint dir
@@ -45,23 +48,22 @@ def main(args):
     model = network_dr.__dict__[cfg.model](cfg.output_shape, cfg.num_class, pretrained=False)
     model.apply(layer_weights_init)
 
-
-    model = torch.nn.DataParallel(model,device_ids=[0,1,2]).cuda()
+    model = torch.nn.DataParallel(model, device_ids=[0, 1, 2]).cuda()
     # # #loadmodel
-    checkpoint_file = os.path.join( 'checkpoint', 'epoch3checkpoint_dr_101SE.pth.tar')
-    checkpoint = torch.load(checkpoint_file)
-    model.load_state_dict(checkpoint['state_dict'])
-    print("=> loaded checkpoint '{}' (epoch {})".format(checkpoint_file, checkpoint['epoch']))
+    # checkpoint_file = os.path.join( 'checkpoint', 'epoch3checkpoint_dr_101SE.pth.tar')
+    # checkpoint = torch.load(checkpoint_file)
+    # model.load_state_dict(checkpoint['state_dict'])
+    # print("=> loaded checkpoint '{}' (epoch {})".format(checkpoint_file, checkpoint['epoch']))
     # define loss function (criterion) and optimizer
     criterion1 = torch.nn.MSELoss().cuda()  # for Global loss
     criterion2 = torch.nn.MSELoss(reduce=False).cuda()  # for refine loss
 
-    base_lr=5e-5
-    max_lr =5e-3
+    base_lr = 5e-3
+    max_lr = 0.1
 
     optimizer = AdamW(model.parameters(),
-                                 lr=base_lr,
-                                 weight_decay=cfg.weight_decay)
+                      lr=base_lr,
+                      weight_decay=cfg.weight_decay)
 
     if args.resume:
         if isfile(args.resume):
@@ -84,36 +86,41 @@ def main(args):
     print('    Total params: %.2fMB' % (sum(p.numel() for p in model.parameters()) / (1024 * 1024) * 4))
 
     train_loader = torch.utils.data.DataLoader(
-        MscocoMulti(cfg,scale=10000),
+        MscocoMulti(cfg, scale=10000),
         batch_size=cfg.batch_size * args.num_gpus, shuffle=True,
         num_workers=args.workers, pin_memory=True)
 
-    clr=CyclicLR(optimizer,base_lr,max_lr,step_size=10200)
+    clr = CyclicLR(optimizer, base_lr, max_lr, step_size=10200)
 
-    trainRecordloss=200
+    trainRecordloss = 200
     for epoch in range(args.start_epoch, args.epochs):
-        if epoch in [4, 8, 12,16]:
-            base_lr = base_lr / 10
-            max_lr = max_lr / 10
+
+        if epoch == 3:
+            base_lr = 5e-5
+            max_lr = 5e-3
+
+        if epoch in [7, 10, 13]:
+            base_lr = base_lr / 5
+            max_lr = max_lr / 5
             clr = CyclicLR(optimizer, base_lr=base_lr, max_lr=max_lr, step_size=10200)
 
         lr = adjust_learning_rate(optimizer, epoch, cfg.lr_dec_epoch, 1)
         print('\nEpoch: %d | LR: %.8f' % (epoch + 1, lr))
         log_file = []
         # train for one epoch
-        train_loss,score = train(train_loader, model, [criterion1, criterion2], optimizer,epoch,clr)
+        train_loss, score = train(train_loader, model, [criterion1, criterion2], optimizer, epoch, clr)
         print('train_loss: ', train_loss)
-        if trainRecordloss-train_loss<0.1:
-           for param_group in optimizer.param_groups:
-               param_group['lr'] *= 0.5
+        if trainRecordloss - train_loss < 0.1:
+            for param_group in optimizer.param_groups:
+                param_group['lr'] *= 0.5
 
-        if train_loss<trainRecordloss:
-            trainRecordloss=train_loss
+        if train_loss < trainRecordloss:
+            trainRecordloss = train_loss
 
         # append logger file
         # logger.append([epoch + 1, lr, train_loss])
 
-        log_file.append([epoch,train_loss,score,lr])
+        log_file.append([epoch, train_loss, score, lr])
         save_model({
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
@@ -121,12 +128,12 @@ def main(args):
         }, checkpoint=args.checkpoint)
 
         with open('log_file.csv', 'a', newline='') as f:
-            writer1=csv.writer(f)
+            writer1 = csv.writer(f)
             writer1.writerows(log_file)
-    # logger.close()
+            # logger.close()
 
 
-def train(train_loader, model, criterions, optimizer,epoch,clr):
+def train(train_loader, model, criterions, optimizer, epoch, clr):
     # prepare for refine loss
     def ohkm(loss, top_k):
         ohkm_loss = 0.
@@ -191,7 +198,7 @@ def train(train_loader, model, criterions, optimizer,epoch,clr):
 
     # change to evaluation mode
     model.eval()
-    flip=True
+    flip = True
 
     test_loader = torch.utils.data.DataLoader(
         MscocoMulti(cfg, scale=0, train=False),
@@ -295,13 +302,14 @@ def train(train_loader, model, criterions, optimizer,epoch,clr):
         writer = csv.writer(f)
         writer.writerows(full_result)
 
-    Evaluator = FaiKeypoint2018Evaluator(userAnswerFile=os.path.join(result_path, 'result101_{}_dr45_se.csv'.format(epoch)),
-                                         standardAnswerFile="fashionAI_key_points_test_a_answer_20180426.csv")
+    Evaluator = FaiKeypoint2018Evaluator(
+        userAnswerFile=os.path.join(result_path, 'result101_{}_dr45_se.csv'.format(epoch)),
+        standardAnswerFile="fashionAI_key_points_test_a_answer_20180426.csv")
     score = Evaluator.evaluate()
 
     print(score)
 
-    return losses.avg,score
+    return losses.avg, score
 
 
 if __name__ == '__main__':
