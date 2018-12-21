@@ -58,8 +58,8 @@ def main(args):
     criterion1 = torch.nn.MSELoss().cuda()  # for Global loss
     criterion2 = torch.nn.MSELoss(reduce=False).cuda()  # for refine loss
 
-    base_lr = 5e-4
-    max_lr = 5e-4
+    base_lr = 4e-4
+    max_lr = 6e-4
 
     optimizer = AdamW(model.parameters(),
                       lr=base_lr,
@@ -94,7 +94,7 @@ def main(args):
 
     trainRecordloss = 200
     for epoch in range(args.start_epoch, args.epochs):
-        if epoch in [16, 19, 30]:
+        if epoch in [16, 19, 23]:
             base_lr = base_lr / 5
             max_lr = max_lr / 5
             clr = CyclicLR(optimizer, base_lr=base_lr, max_lr=max_lr, step_size=10800)
