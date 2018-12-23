@@ -50,7 +50,7 @@ def main(args):
 
     model = torch.nn.DataParallel(model, device_ids=[0, 1, 2]).cuda()
     # # #loadmodel
-    # checkpoint_file = os.path.join( 'checkpoint', 'epoch3checkpoint_dr_101SE.pth.tar')
+    # checkpoint_file = os.path.join('checkpoint', 'epoch3checkpoint_dr_101SE.pth.tar')
     # checkpoint = torch.load(checkpoint_file)
     # model.load_state_dict(checkpoint['state_dict'])
     # print("=> loaded checkpoint '{}' (epoch {})".format(checkpoint_file, checkpoint['epoch']))
@@ -58,8 +58,8 @@ def main(args):
     criterion1 = torch.nn.MSELoss().cuda()  # for Global loss
     criterion2 = torch.nn.MSELoss(reduce=False).cuda()  # for refine loss
 
-    base_lr = 5e-3
-    max_lr = 0.1
+    base_lr = 4e-4
+    max_lr = 6e-4
 
     optimizer = AdamW(model.parameters(),
                       lr=base_lr,
@@ -90,19 +90,14 @@ def main(args):
         batch_size=cfg.batch_size * args.num_gpus, shuffle=True,
         num_workers=args.workers, pin_memory=True)
 
-    clr = CyclicLR(optimizer, base_lr, max_lr, step_size=10200)
+    clr = CyclicLR(optimizer, base_lr, max_lr, step_size=10800)
 
     trainRecordloss = 200
     for epoch in range(args.start_epoch, args.epochs):
-
-        if epoch == 3:
-            base_lr = 5e-5
-            max_lr = 5e-3
-
-        if epoch in [7, 10, 13]:
+        if epoch in [16, 19, 23]:
             base_lr = base_lr / 5
             max_lr = max_lr / 5
-            clr = CyclicLR(optimizer, base_lr=base_lr, max_lr=max_lr, step_size=10200)
+            clr = CyclicLR(optimizer, base_lr=base_lr, max_lr=max_lr, step_size=10800)
 
         lr = adjust_learning_rate(optimizer, epoch, cfg.lr_dec_epoch, 1)
         print('\nEpoch: %d | LR: %.8f' % (epoch + 1, lr))
