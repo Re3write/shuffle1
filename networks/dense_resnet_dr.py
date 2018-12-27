@@ -3,7 +3,7 @@ import math
 import torch.utils.model_zoo as model_zoo
 from networks.group_normal import GroupNorm
 import torch
-import torch.functional as F
+import torch.nn.functional as F
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152']
