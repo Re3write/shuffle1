@@ -45,6 +45,7 @@ class SpatialAttention(nn.Module):
         # print(x.size())
         return self.sigmoid(x)
 
+
 # cbam
 class Bottleneck(nn.Module):
     expansion = 4
@@ -120,135 +121,155 @@ class CAB(nn.Module):
 
 
 class CAB_improve(nn.Module):
-    def __init__(self,in_channels,out_channels):
-        super(CAB_improve,self).__init__()
+    def __init__(self, in_channels, out_channels):
+        super(CAB_improve, self).__init__()
         self.global_pooling1 = nn.AdaptiveAvgPool2d(1)
-        self.conv11 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv11 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn11 = nn.BatchNorm2d(out_channels)
         self.relu1 = nn.ReLU()
-        self.conv12 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv12 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn12 = nn.BatchNorm2d(out_channels)
         self.sigmod1 = nn.Sigmoid()
 
         self.global_pooling2 = nn.AdaptiveAvgPool2d(1)
-        self.conv21 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv21 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn21 = nn.BatchNorm2d(out_channels)
         self.relu2 = nn.ReLU()
-        self.conv22 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv22 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn22 = nn.BatchNorm2d(out_channels)
         self.sigmod2 = nn.Sigmoid()
 
         self.global_pooling3 = nn.AdaptiveAvgPool2d(1)
-        self.conv31 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv31 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn31 = nn.BatchNorm2d(out_channels)
         self.relu3 = nn.ReLU()
-        self.conv32 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv32 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn32 = nn.BatchNorm2d(out_channels)
         self.sigmod3 = nn.Sigmoid()
 
         self.global_pooling4 = nn.AdaptiveAvgPool2d(1)
-        self.conv41 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv41 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
         self.relu4 = nn.ReLU()
-        self.conv42 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.bn41 = nn.BatchNorm2d(out_channels)
+        self.conv42 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn42 = nn.BatchNorm2d(out_channels)
         self.sigmod4 = nn.Sigmoid()
 
         self.global_pooling5 = nn.AdaptiveAvgPool2d(1)
-        self.conv51 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv51 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn51 = nn.BatchNorm2d(out_channels)
         self.relu5 = nn.ReLU()
-        self.conv52 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv52 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn52 = nn.BatchNorm2d(out_channels)
         self.sigmod5 = nn.Sigmoid()
 
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
-    def forward(self,x):
-       x1,x2,x3,x4,x5=x
-       x = torch.cat([x1,x2,x3,x4,x5], dim=1)
+    def forward(self, x):
+        x1, x2, x3, x4, x5 = x
+        x = torch.cat([x1, x2, x3, x4, x5], dim=1)
 
+        out1 = self.global_pooling1(x)
+        out1 = self.bn11(self.conv11(out1))
+        out1 = self.relu1(out1)
+        out1 = self.bn12(self.conv12(out1))
+        out1 = self.sigmod1(out1)
 
-       out1 = self.global_pooling1(x)
-       out1 = self.conv11(out1)
-       out1 = self.relu1(out1)
-       out1 = self.conv12(out1)
-       out1 = self.sigmod1(out1)
+        out2 = self.global_pooling2(x)
+        out2 = self.bn21(self.conv21(out2))
+        out2 = self.relu2(out2)
+        out2 = self.bn22(self.conv22(out2))
+        out2 = self.sigmod2(out2)
 
-       out2 = self.global_pooling2(x)
-       out2 = self.conv21(out2)
-       out2 = self.relu2(out2)
-       out2 = self.conv22(out2)
-       out2 = self.sigmod2(out2)
+        out3 = self.global_pooling3(x)
+        out3 = self.bn31(self.conv31(out3))
+        out3 = self.relu3(out3)
+        out3 = self.bn32(self.conv32(out3))
+        out3 = self.sigmod3(out3)
 
-       out3 = self.global_pooling3(x)
-       out3 = self.conv31(out3)
-       out3 = self.relu3(out3)
-       out3 = self.conv32(out3)
-       out3 = self.sigmod3(out3)
+        out4 = self.global_pooling4(x)
+        out4 = self.bn41(self.conv41(out4))
+        out4 = self.relu4(out4)
+        out4 = self.bn42(self.conv42(out4))
+        out4 = self.sigmod4(out4)
 
-       out4 = self.global_pooling4(x)
-       out4 = self.conv41(out4)
-       out4 = self.relu4(out4)
-       out4 = self.conv42(out4)
-       out4 = self.sigmod4(out4)
+        out5 = self.global_pooling5(x)
+        out5 = self.bn51(self.conv51(out5))
+        out5 = self.relu5(out5)
+        out5 = self.bn52(self.conv52(out5))
+        out5 = self.sigmod5(out5)
 
-       out5 = self.global_pooling5(x)
-       out5 = self.conv51(out5)
-       out5 = self.relu5(out5)
-       out5 = self.conv52(out5)
-       out5 = self.sigmod5(out5)
-
-       final_output=out1*x1+out2*x2+out3*x3+out4*x4+out5*x5
-       return final_output
+        final_output = out1 * x1 + out2 * x2 + out3 * x3 + out4 * x4 + out5 * x5
+        return final_output
 
 
 class CAB_improve2(nn.Module):
-    def __init__(self,in_channels,out_channels):
-        super(CAB_improve2,self).__init__()
+    def __init__(self, in_channels, out_channels):
+        super(CAB_improve2, self).__init__()
         self.global_pooling1 = nn.AdaptiveAvgPool2d(1)
-        self.conv11 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv11 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn11 = nn.BatchNorm2d(out_channels)
         self.relu1 = nn.ReLU()
-        self.conv12 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv12 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn12 = nn.BatchNorm2d(out_channels)
         self.sigmod1 = nn.Sigmoid()
 
         self.global_pooling2 = nn.AdaptiveAvgPool2d(1)
-        self.conv21 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv21 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn21 = nn.BatchNorm2d(out_channels)
         self.relu2 = nn.ReLU()
-        self.conv22 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv22 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn22 = nn.BatchNorm2d(out_channels)
         self.sigmod2 = nn.Sigmoid()
 
         self.global_pooling3 = nn.AdaptiveAvgPool2d(1)
-        self.conv31 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv31 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn31 = nn.BatchNorm2d(out_channels)
         self.relu3 = nn.ReLU()
-        self.conv32 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv32 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn32 = nn.BatchNorm2d(out_channels)
         self.sigmod3 = nn.Sigmoid()
 
         self.global_pooling4 = nn.AdaptiveAvgPool2d(1)
-        self.conv41 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv41 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn41 = nn.BatchNorm2d(out_channels)
         self.relu4 = nn.ReLU()
-        self.conv42 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv42 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn42 = nn.BatchNorm2d(out_channels)
         self.sigmod4 = nn.Sigmoid()
 
+    def forward(self, x):
+        x1, x2, x3, x4 = x
+        x = torch.cat([x1, x2, x3, x4], dim=1)
 
+        out1 = self.global_pooling1(x)
+        out1 = self.bn11(self.conv11(out1))
+        out1 = self.relu1(out1)
+        out1 = self.bn12(self.conv12(out1))
+        out1 = self.sigmod1(out1)
 
-    def forward(self,x):
-       x1,x2,x3,x4=x
-       x = torch.cat([x1,x2,x3,x4], dim=1)
+        out2 = self.global_pooling2(x)
+        out2 = self.bn21(self.conv21(out2))
+        out2 = self.relu2(out2)
+        out2 = self.bn22(self.conv22(out2))
+        out2 = self.sigmod2(out2)
 
+        out3 = self.global_pooling3(x)
+        out3 = self.bn31(self.conv31(out3))
+        out3 = self.relu3(out3)
+        out3 = self.bn32(self.conv32(out3))
+        out3 = self.sigmod3(out3)
 
-       out1 = self.global_pooling1(x)
-       out1 = self.conv11(out1)
-       out1 = self.relu1(out1)
-       out1 = self.conv12(out1)
-       out1 = self.sigmod1(out1)
+        out4 = self.global_pooling4(x)
+        out4 = self.bn41(self.conv41(out4))
+        out4 = self.relu4(out4)
+        out4 = self.bn42(self.conv42(out4))
+        out4 = self.sigmod4(out4)
 
-       out2 = self.global_pooling2(x)
-       out2 = self.conv21(out2)
-       out2 = self.relu2(out2)
-       out2 = self.conv22(out2)
-       out2 = self.sigmod2(out2)
-
-       out3 = self.global_pooling3(x)
-       out3 = self.conv31(out3)
-       out3 = self.relu3(out3)
-       out3 = self.conv32(out3)
-       out3 = self.sigmod3(out3)
-
-       out4 = self.global_pooling4(x)
-       out4 = self.conv41(out4)
-       out4 = self.relu4(out4)
-       out4 = self.conv42(out4)
-       out4 = self.sigmod4(out4)
-
-       final_output=out1*x1+out2*x2+out3*x3+out4*x4
-       return final_output
+        final_output = out1 * x1 + out2 * x2 + out3 * x3 + out4 * x4
+        return final_output

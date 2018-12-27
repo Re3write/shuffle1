@@ -19,6 +19,9 @@ class Bottleneck(nn.Module):
         self.bn3 = nn.BatchNorm2d(planes * 2)
         self.relu = nn.ReLU(inplace=True)
 
+        self.shortcut = nn.Conv2d(inplanes, planes * 4, kernel_size=1, stride=1, bias=False)
+        self.bn4 = nn.BatchNorm2d(planes * 4)
+
         self.downsample = nn.Sequential(
             nn.Conv2d(inplanes, planes * 2,
                       kernel_size=1, stride=stride, bias=False),
@@ -44,6 +47,8 @@ class Bottleneck(nn.Module):
         out = self.bn3(out)
         # out = self.se(out)
 
+        residual = self.shortcut(residual)
+        residual = self.bn4(residual)
         if self.downsample is not None:
             residual = self.downsample(x)
 
@@ -60,6 +65,13 @@ class refineNet(nn.Module):
         self.cascade = self._make_layer(lateral_channel, out_shape)
         self.final_predict = self._predict(lateral_channel, num_class)
         self.aasp = ASPP()
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
         # self.spA = SpatialAttention(7)
         # self.bn=nn.BatchNorm2d(256)
 

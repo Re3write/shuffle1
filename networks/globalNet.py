@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from networks.group_normal import GroupNorm
 from networks.Attention_Module import CAB_improve2
 
+
 class globalNet(nn.Module):
     def __init__(self, channel_settings, output_shape, num_class):
         super(globalNet, self).__init__()
@@ -29,22 +30,19 @@ class globalNet(nn.Module):
         self.dil18 = nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=False, padding=3, dilation=3)
         self.bn18 = nn.BatchNorm2d(256)
 
-        self.conv_1x1_3 = nn.Conv2d(1024, 256, kernel_size=1)
+        self.conv_1x1_3 = nn.Conv2d(1024, 256, kernel_size=1, bias=False)
         self.bn_conv_1x1_3 = nn.BatchNorm2d(256)
 
         # self.upsamples = nn.ModuleList(upsamples)
         self.predict = self._predict(output_shape, num_class)
-        self.CAB=CAB_improve2(1024,256)
+        self.CAB = CAB_improve2(1024, 256)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-                if m.bias is not None:
-                    m.bias.data.zero_()
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
     def _lateral(self, input_size):
         layers = []
@@ -92,8 +90,8 @@ class globalNet(nn.Module):
         x3 = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x3)
         x2 = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x2)
         feature1 = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(feature1)
-        global_fm = torch.cat([x4, x3,x2,feature1], 1)
-        global_fm=F.relu(self.bn_conv_1x1_3(self.conv_1x1_3(global_fm)))
+        global_fm = torch.cat([x4, x3, x2, feature1], 1)
+        global_fm = F.relu(self.bn_conv_1x1_3(self.conv_1x1_3(global_fm)))
         # global_fm = F.relu(self.bn_conv_1x1_3(self.CAB((x4,x3,x2,feature1))))
 
         global_outs = self.predict(global_fm)
