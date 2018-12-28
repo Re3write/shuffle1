@@ -50,10 +50,10 @@ def main(args):
 
     model = torch.nn.DataParallel(model, device_ids=[0, 1, 2]).cuda()
     # # #loadmodel
-    # checkpoint_file = os.path.join('checkpoint', 'epoch9checkpoint_dr_101SE.pth.tar')
-    # checkpoint = torch.load(checkpoint_file)
-    # model.load_state_dict(checkpoint['state_dict'])
-    # print("=> loaded checkpoint '{}' (epoch {})".format(checkpoint_file, checkpoint['epoch']))
+    checkpoint_file = os.path.join('checkpoint', 'epoch6checkpoint_dr_101SE.pth.tar')
+    checkpoint = torch.load(checkpoint_file)
+    model.load_state_dict(checkpoint['state_dict'])
+    print("=> loaded checkpoint '{}' (epoch {})".format(checkpoint_file, checkpoint['epoch']))
     # define loss function (criterion) and optimizer
     criterion1 = torch.nn.MSELoss().cuda()  # for Global loss
     criterion2 = torch.nn.MSELoss(reduce=False).cuda()  # for refine loss
@@ -94,7 +94,7 @@ def main(args):
 
     trainRecordloss = 200
     for epoch in range(args.start_epoch, args.epochs):
-        if epoch in [6, 8, 10]:
+        if epoch in [3, 6, 9]:
             base_lr = base_lr / 5
             max_lr = max_lr / 5
             clr = CyclicLR(optimizer, base_lr=base_lr, max_lr=max_lr, step_size=10800)
