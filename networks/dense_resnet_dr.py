@@ -71,8 +71,8 @@ class Bottleneck(nn.Module):
         self.downsample = downsample
         self.stride = stride
 
-        self.shortcut = nn.Conv2d(inplanes, planes * 4, kernel_size=1, stride=1, bias=False)
-        self.bn4 = BatchNorm(planes * 4)
+        # self.shortcut = nn.Conv2d(inplanes, planes * 4, kernel_size=1, stride=1, bias=False)
+        # self.bn4 = BatchNorm(planes * 4)
         # self.se = se_block.SELayer(planes * 4)
 
     def forward(self, x):
@@ -90,8 +90,8 @@ class Bottleneck(nn.Module):
         out = self.bn3(out)
         # out = self.se(out)
 
-        residual = self.shortcut(residual)
-        residual = self.bn4(residual)
+        # residual = self.shortcut(residual)
+        # residual = self.bn4(residual)
 
         if self.downsample is not None:
             residual = self.downsample(x)
@@ -123,8 +123,8 @@ class Bottleneck_dr(nn.Module):
         self.downsample = downsample
         self.stride = stride
 
-        self.shortcut = nn.Conv2d(inplanes, planes * 4, kernel_size=1, stride=1, bias=False)
-        self.bn4 = BatchNorm(planes * 4)
+        # self.shortcut = nn.Conv2d(inplanes, planes * 4, kernel_size=1, stride=1, bias=False)
+        # self.bn4 = BatchNorm(planes * 4)
         # self.se = se_block.SELayer(planes * 4)
 
     def forward(self, x):
@@ -142,8 +142,8 @@ class Bottleneck_dr(nn.Module):
         out = self.bn3(out)
         # out = self.se(out)
 
-        residual = self.shortcut(residual)
-        residual = self.bn4(residual)
+        # residual = self.shortcut(residual)
+        # residual = self.bn4(residual)
         if self.downsample is not None:
             residual = self.downsample(x)
 
@@ -209,15 +209,15 @@ class ResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.fuse1_conv1 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=False)
-        self.fuse1_bn1 = nn.BatchNorm2d(256)
-        self.fuse1_conv2 = nn.Conv2d(768, 512, kernel_size=1, bias=False)
-        self.fuse1_bn2 = nn.BatchNorm2d(512)
+        # self.fuse1_conv1 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=False)
+        # self.fuse1_bn1 = nn.BatchNorm2d(256)
+        # self.fuse1_conv2 = nn.Conv2d(768, 512, kernel_size=1, bias=False)
+        # self.fuse1_bn2 = nn.BatchNorm2d(512)
         # self.layer2 = self._make_layer_dr(block2, 128, layers[1], stride=1, dilation=[1, 2, 5, 9])
         # self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer3 = self._make_layer_dr(block2, 256, layers[2], stride=1, dilation=[2, 2, 1, 2, 5, 9])
-        self.fuse2_conv1 = nn.Conv2d(1792, 1024, kernel_size=1, bias=False)
-        self.fuse2_bn1 = nn.BatchNorm2d(1024)
+        # self.fuse2_conv1 = nn.Conv2d(1792, 1024, kernel_size=1, bias=False)
+        # self.fuse2_bn1 = nn.BatchNorm2d(1024)
         # self.layer3 = self._make_layer_dr(block2, 256, layers[2], stride=1,dilation=[2,2,5,9,1,2,5,9,1,2,5,9,1,2,5,9,1,2,5,9,1,2,5])
         self.layer4 = self._make_layer_dr(block2, 512, layers[3], stride=1, dilation=[5, 9, 17])
         # 5,9,17

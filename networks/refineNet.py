@@ -19,8 +19,8 @@ class Bottleneck(nn.Module):
         self.bn3 = nn.BatchNorm2d(planes * 2)
         self.relu = nn.ReLU(inplace=True)
 
-        self.shortcut = nn.Conv2d(inplanes, planes * 4, kernel_size=1, stride=1, bias=False)
-        self.bn4 = nn.BatchNorm2d(planes * 4)
+        # self.shortcut = nn.Conv2d(inplanes, planes * 4, kernel_size=1, stride=1, bias=False)
+        # self.bn4 = nn.BatchNorm2d(planes * 4)
 
         self.downsample = nn.Sequential(
             nn.Conv2d(inplanes, planes * 2,
@@ -47,8 +47,8 @@ class Bottleneck(nn.Module):
         out = self.bn3(out)
         # out = self.se(out)
 
-        residual = self.shortcut(residual)
-        residual = self.bn4(residual)
+        # residual = self.shortcut(residual)
+        # residual = self.bn4(residual)
         if self.downsample is not None:
             residual = self.downsample(x)
 
