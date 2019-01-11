@@ -35,7 +35,7 @@ class globalNet(nn.Module):
 
         # self.upsamples = nn.ModuleList(upsamples)
         self.predict = self._predict(output_shape, num_class)
-        self.CAB = CAB_improve2(1024, 256)
+        # self.CAB = CAB_improve2(1024, 256)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

@@ -266,3 +266,57 @@ class CAB_improve2(nn.Module):
 
         final_output = out1 * x1 + out2 * x2 + out3 * x3 + out4 * x4
         return final_output
+
+
+class cab_dense1(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(cab_dense1, self).__init__()
+        self.global_pooling1 = nn.AdaptiveAvgPool2d(1)
+        self.conv11 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn11 = nn.BatchNorm2d(out_channels)
+        self.relu1 = nn.ReLU()
+        self.conv12 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn12 = nn.BatchNorm2d(out_channels)
+        self.sigmod1 = nn.Sigmoid()
+
+        self.global_pooling2 = nn.AdaptiveAvgPool2d(1)
+        self.conv21 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn21 = nn.BatchNorm2d(out_channels)
+        self.relu2 = nn.ReLU()
+        self.conv22 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn22 = nn.BatchNorm2d(out_channels)
+        self.sigmod2 = nn.Sigmoid()
+
+        self.global_pooling3 = nn.AdaptiveAvgPool2d(1)
+        self.conv31 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn31 = nn.BatchNorm2d(out_channels)
+        self.relu3 = nn.ReLU()
+        self.conv32 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn32 = nn.BatchNorm2d(out_channels)
+        self.sigmod3 = nn.Sigmoid()
+
+    def forward(self, x):
+        x1, x2, x3 = x
+        x = torch.cat([x1, x2, x3], dim=1)
+
+        out1 = self.global_pooling1(x)
+        out1 = self.bn11(self.conv11(out1))
+        out1 = self.relu1(out1)
+        out1 = self.bn12(self.conv12(out1))
+        out1 = self.sigmod1(out1)
+
+        out2 = self.global_pooling2(x)
+        out2 = self.bn21(self.conv21(out2))
+        out2 = self.relu2(out2)
+        out2 = self.bn22(self.conv22(out2))
+        out2 = self.sigmod2(out2)
+
+        out3 = self.global_pooling3(x)
+        out3 = self.bn31(self.conv31(out3))
+        out3 = self.relu3(out3)
+        out3 = self.bn32(self.conv32(out3))
+        out3 = self.sigmod3(out3)
+
+
+        final_output = out1 * x1 + out2 * x2 + out3 * x3
+        return final_output

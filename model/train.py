@@ -35,7 +35,7 @@ from utils.pytorch_utils import CyclicLR
 
 warnings.filterwarnings('ignore')
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3,1,2'
 
 
 def main(args):

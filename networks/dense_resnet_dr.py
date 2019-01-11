@@ -1,9 +1,12 @@
-import torch.nn as nn
 import math
-import torch.utils.model_zoo as model_zoo
-from networks.group_normal import GroupNorm
+
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils.model_zoo as model_zoo
+from networks.Attention_Module import cab_dense1
+
+# from networks.group_normal import GroupNorm
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152']
@@ -209,15 +212,16 @@ class ResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.fuse1_conv1 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=False)
-        self.fuse1_bn1 = nn.BatchNorm2d(256)
-        self.fuse1_conv2 = nn.Conv2d(768, 512, kernel_size=1, bias=False)
-        self.fuse1_bn2 = nn.BatchNorm2d(512)
+        self.cab = cab_dense1(1792, 1024)
+        # self.fuse1_conv1 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=False)
+        # self.fuse1_bn1 = nn.BatchNorm2d(256)
+        # self.fuse1_conv2 = nn.Conv2d(768, 512, kernel_size=1, bias=False)
+        # self.fuse1_bn2 = nn.BatchNorm2d(512)
         # self.layer2 = self._make_layer_dr(block2, 128, layers[1], stride=1, dilation=[1, 2, 5, 9])
         # self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer3 = self._make_layer_dr(block2, 256, layers[2], stride=1, dilation=[2, 2, 1, 2, 5, 9])
-        self.fuse2_conv1 = nn.Conv2d(1792, 1024, kernel_size=1, bias=False)
-        self.fuse2_bn1 = nn.BatchNorm2d(1024)
+        # self.fuse2_conv1 = nn.Conv2d(1792, 1024, kernel_size=1, bias=False)
+        # self.fuse2_bn1 = nn.BatchNorm2d(1024)
         # self.layer3 = self._make_layer_dr(block2, 256, layers[2], stride=1,dilation=[2,2,5,9,1,2,5,9,1,2,5,9,1,2,5,9,1,2,5,9,1,2,5])
         self.layer4 = self._make_layer_dr(block2, 512, layers[3], stride=1, dilation=[5, 9, 17])
         # 5,9,17
@@ -270,13 +274,18 @@ class ResNet(nn.Module):
         x = self.maxpool(x)
 
         x1 = self.layer1(x)
-        downsample_x1 = F.relu(self.fuse1_bn1(self.fuse1_conv1(x1)))
+        # downsample_x1 = F.relu(self.fuse1_bn1(self.fuse1_conv1(x1)))
         x2 = self.layer2(x1)
-        fusex2 = torch.cat([x2, downsample_x1], 1)
-        fusex2 = F.relu(self.fuse1_bn2(self.fuse1_conv2(fusex2)))
-        x3 = self.layer3(fusex2)
-        fusex3 = torch.cat([x3, x2, downsample_x1], 1)
-        fusex3 = F.relu(self.fuse2_bn1(self.fuse2_conv1(fusex3)))
+        # fusex2 = torch.cat([x2, downsample_x1], 1)
+        # fusex2 = x2 + downsample_x1
+        # fusex2 = F.relu(self.fuse1_bn2(self.fuse1_conv2(fusex2)))
+        x3 = self.layer3(x2)
+        # temp1=F.relu(self.fuse2_bn1(self.fuse2_conv1(x1)))
+        # temp2=F.relu(self.fuse2_bn2(self.fuse2_conv2(x2)))
+        # fusex3 = torch.cat([x3, x2, downsample_x1], 1)
+        # fusex3 = F.relu(self.fuse2_bn1(self.fuse2_conv1(fusex3)))
+        # fusex3=temp1+temp2+x3
+        fusex3 = self.cab(x1, x2, x3)
         x4 = self.layer4(fusex3)
 
         return [x4, x3, x2, x1]
@@ -323,6 +332,7 @@ def resnet50(pretrained=False, **kwargs):
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
+    count = 0
     model = ResNet(Bottleneck, Bottleneck_dr, [3, 4, 6, 3], **kwargs)
     if pretrained:
         print('Initialize with pre-trained ResNet')
@@ -333,7 +343,9 @@ def resnet50(pretrained=False, **kwargs):
             if k not in state_dict:
                 continue
             state_dict[k] = v
+            count = count + 1
         print('successfully load ' + str(len(state_dict.keys())) + ' keys')
+        print('实际载入数量：' + str(count))
         model.load_state_dict(state_dict)
     return model
 
@@ -374,3 +386,18 @@ def resnet152(pretrained=False, **kwargs):
             state_dict[k] = v
         model.load_state_dict(state_dict)
     return model
+
+
+if __name__ == '__main__':
+    pretrained_state_dict = model_zoo.load_url(model_urls['resnet50'])
+    for k, v in pretrained_state_dict.items():
+        print(k)
+    print('successfully load ' + str(len(pretrained_state_dict.keys())) + ' keys')
+
+    print('mymodel')
+    model = ResNet(Bottleneck, Bottleneck_dr, [3, 4, 6, 3])
+    state_dict = model.state_dict()
+    for k, v in state_dict.items():
+        print(k)
+    print('successfully load ' + str(len(state_dict.keys())) + ' keys')
+    print(state_dict.keys())
