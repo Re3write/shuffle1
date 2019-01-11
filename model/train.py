@@ -35,7 +35,7 @@ from utils.pytorch_utils import CyclicLR
 
 warnings.filterwarnings('ignore')
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '3,1,2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3,2'
 
 
 def main(args):
@@ -48,7 +48,7 @@ def main(args):
     model = network_dr.__dict__[cfg.model](cfg.output_shape, cfg.num_class, pretrained=True)
     # model.apply(layer_weights_init)
 
-    model = torch.nn.DataParallel(model, device_ids=[0, 1, 2]).cuda()
+    model = torch.nn.DataParallel(model, device_ids=[0, 1]).cuda()
     # # #loadmodel
     # checkpoint_file = os.path.join('checkpoint', 'epoch6checkpoint_dr_101SE.pth.tar')
     # checkpoint = torch.load(checkpoint_file)

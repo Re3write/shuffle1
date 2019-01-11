@@ -285,7 +285,7 @@ class ResNet(nn.Module):
         # fusex3 = torch.cat([x3, x2, downsample_x1], 1)
         # fusex3 = F.relu(self.fuse2_bn1(self.fuse2_conv1(fusex3)))
         # fusex3=temp1+temp2+x3
-        fusex3 = self.cab(x1, x2, x3)
+        fusex3 = self.cab((x1, x2, x3))
         x4 = self.layer4(fusex3)
 
         return [x4, x3, x2, x1]

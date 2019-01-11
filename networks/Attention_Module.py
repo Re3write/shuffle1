@@ -271,6 +271,9 @@ class CAB_improve2(nn.Module):
 class cab_dense1(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(cab_dense1, self).__init__()
+        self.conv = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn = nn.BatchNorm2d(256)
+
         self.global_pooling1 = nn.AdaptiveAvgPool2d(1)
         self.conv11 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
         self.bn11 = nn.BatchNorm2d(out_channels)
@@ -297,6 +300,7 @@ class cab_dense1(nn.Module):
 
     def forward(self, x):
         x1, x2, x3 = x
+        x1 = F.relu(self.bn(self.conv(x1)))
         x = torch.cat([x1, x2, x3], dim=1)
 
         out1 = self.global_pooling1(x)
@@ -316,7 +320,6 @@ class cab_dense1(nn.Module):
         out3 = self.relu3(out3)
         out3 = self.bn32(self.conv32(out3))
         out3 = self.sigmod3(out3)
-
 
         final_output = out1 * x1 + out2 * x2 + out3 * x3
         return final_output
