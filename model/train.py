@@ -68,6 +68,9 @@ def main(args):
                       lr=base_lr,
                       weight_decay=cfg.weight_decay)
     write = SummaryWriter('logdir')
+
+    # dummy_input = torch.Tensor(1, 3, 224, 224)
+    write.add_graph(model)
     if args.resume:
         if isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))

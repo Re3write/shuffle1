@@ -212,7 +212,7 @@ class ResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.cab = cab_dense1(3072, 1024)
+        # self.cab = cab_dense1(3072, 1024)
         # self.fuse1_conv1 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=False)
         # self.fuse1_bn1 = nn.BatchNorm2d(256)
         # self.fuse1_conv2 = nn.Conv2d(768, 512, kernel_size=1, bias=False)
@@ -225,6 +225,14 @@ class ResNet(nn.Module):
         # self.layer3 = self._make_layer_dr(block2, 256, layers[2], stride=1,dilation=[2,2,5,9,1,2,5,9,1,2,5,9,1,2,5,9,1,2,5,9,1,2,5])
         self.layer4 = self._make_layer_dr(block2, 512, layers[3], stride=1, dilation=[5, 9, 17])
         # 5,9,17
+        laterals = []
+        laterals.append(self._lateral(256, 256))
+        laterals.append(self._lateral(512, 256))
+        laterals.append(self._lateral(1024, 512))
+        self.laterals = nn.ModuleList(laterals)
+        self.fuseconv3_3 = nn.Conv2d(1024, 1024, kernel_size=3, padding=1, bias=False)
+        self.bn3_3 = nn.BatchNorm2d(1024)
+        self.relu3_3 = nn.ReLU(inplace=True)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -232,6 +240,15 @@ class ResNet(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+
+    def _lateral(self, input_size, output_size):
+        layers = []
+        layers.append(nn.Conv2d(input_size, output_size,
+                                kernel_size=1, stride=1, bias=False))
+        layers.append(nn.BatchNorm2d(output_size))
+        layers.append(nn.ReLU(inplace=True))
+
+        return nn.Sequential(*layers)
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
@@ -285,8 +302,12 @@ class ResNet(nn.Module):
         # fusex3 = torch.cat([x3, x2, downsample_x1], 1)
         # fusex3 = F.relu(self.fuse2_bn1(self.fuse2_conv1(fusex3)))
         # fusex3=temp1+temp2+x3
-        fusex3 = self.cab((x1, x2, x3))
-        x4 = self.layer4(fusex3)
+        # fusex3 = self.cab((x1, x2, x3))
+        fusex1 = self.laterals[0](x1)
+        fusex2 = self.laterals[1](x2)
+        fusex3 = self.laterals[2](x3)
+        fusex4 = self.relu3_3(self.bn3_3(torch.cat([fusex3, fusex2, fusex1]), 1))
+        x4 = self.layer4(fusex4)
 
         return [x4, x3, x2, x1]
 
