@@ -212,7 +212,7 @@ class ResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.cab = cab_dense1(1792, 1024)
+        self.cab = cab_dense1(3072, 1024)
         # self.fuse1_conv1 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=False)
         # self.fuse1_bn1 = nn.BatchNorm2d(256)
         # self.fuse1_conv2 = nn.Conv2d(768, 512, kernel_size=1, bias=False)

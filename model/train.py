@@ -32,7 +32,10 @@ import warnings
 from utils.pytorch_utils import layer_weights_init
 from utils.adamw import AdamW
 from utils.pytorch_utils import CyclicLR
+from tensorboardX import SummaryWriter
+from utils.tensorboradX_utils import concact_features1
 
+step_counter = 0
 warnings.filterwarnings('ignore')
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3,2'
@@ -64,7 +67,7 @@ def main(args):
     optimizer = AdamW(model.parameters(),
                       lr=base_lr,
                       weight_decay=cfg.weight_decay)
-
+    write = SummaryWriter('logdir')
     if args.resume:
         if isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
@@ -103,7 +106,7 @@ def main(args):
         print('\nEpoch: %d | LR: %.8f' % (epoch + 1, lr))
         log_file = []
         # train for one epoch
-        train_loss, score = train(train_loader, model, [criterion1, criterion2], optimizer, epoch, clr)
+        train_loss, score = train(train_loader, model, [criterion1, criterion2], optimizer, epoch + 1, clr, write)
         print('train_loss: ', train_loss)
         if trainRecordloss - train_loss < 0.1:
             for param_group in optimizer.param_groups:
@@ -126,9 +129,10 @@ def main(args):
             writer1 = csv.writer(f)
             writer1.writerows(log_file)
             # logger.close()
+    write.close()
 
 
-def train(train_loader, model, criterions, optimizer, epoch, clr):
+def train(train_loader, model, criterions, optimizer, epoch, clr, write):
     # prepare for refine loss
     def ohkm(loss, top_k):
         ohkm_loss = 0.
@@ -186,10 +190,17 @@ def train(train_loader, model, criterions, optimizer, epoch, clr):
         loss.backward()
         optimizer.step()
 
+        write.add_scalar('loss', loss, epoch)
+
+        global step_counter
         if (i % 100 == 0 and i != 0):
             print('iteration {} | loss: {}, global loss: {}, refine loss: {}, avg loss: {}'
                   .format(i, loss.data.item(), global_loss_record,
                           refine_loss_record, losses.avg))
+        elif (i % 3000 == 0):
+            write.add_image("global_outputs", concact_features1(global_outputs), step_counter)
+            write.add_image("refine_output", concact_features1(refine_output), step_counter)
+            step_counter += 1
 
     # change to evaluation mode
     model.eval()
