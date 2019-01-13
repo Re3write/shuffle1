@@ -36,9 +36,10 @@ from tensorboardX import SummaryWriter
 from utils.tensorboradX_utils import concact_features1
 
 step_counter = 0
+itertion = 0
 warnings.filterwarnings('ignore')
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '3,2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1,2,3'
 
 
 def main(args):
@@ -51,7 +52,7 @@ def main(args):
     model = network_dr.__dict__[cfg.model](cfg.output_shape, cfg.num_class, pretrained=True)
     # model.apply(layer_weights_init)
 
-    model = torch.nn.DataParallel(model, device_ids=[0, 1]).cuda()
+    model = torch.nn.DataParallel(model, device_ids=[0, 1, 2]).cuda()
     # # #loadmodel
     # checkpoint_file = os.path.join('checkpoint', 'epoch6checkpoint_dr_101SE.pth.tar')
     # checkpoint = torch.load(checkpoint_file)
@@ -69,8 +70,8 @@ def main(args):
                       weight_decay=cfg.weight_decay)
     write = SummaryWriter('logdir')
 
-    # dummy_input = torch.Tensor(1, 3, 224, 224)
-    write.add_graph(model)
+    dummy_input = torch.Tensor(18, 3, 512, 512)
+    write.add_graph(model, (dummy_input))
     if args.resume:
         if isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
@@ -153,6 +154,8 @@ def train(train_loader, model, criterions, optimizer, epoch, clr, write):
     data_time = AverageMeter()
     losses = AverageMeter()
 
+    global step_counter
+    global itertion
     # switch to train mode
     model.train()
 
@@ -188,14 +191,14 @@ def train(train_loader, model, criterions, optimizer, epoch, clr, write):
         # record loss
         losses.update(loss.data.item(), inputs.size(0))
 
+        write.add_scalar('loss', loss, itertion)
+        itertion=itertion+1
+
         # compute gradient and do Optimization step
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        write.add_scalar('loss', loss, epoch)
-
-        global step_counter
         if (i % 100 == 0 and i != 0):
             print('iteration {} | loss: {}, global loss: {}, refine loss: {}, avg loss: {}'
                   .format(i, loss.data.item(), global_loss_record,
@@ -204,6 +207,7 @@ def train(train_loader, model, criterions, optimizer, epoch, clr, write):
             write.add_image("global_outputs", concact_features1(global_outputs), step_counter)
             write.add_image("refine_output", concact_features1(refine_output), step_counter)
             step_counter += 1
+
 
     # change to evaluation mode
     model.eval()
