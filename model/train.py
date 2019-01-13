@@ -69,9 +69,10 @@ def main(args):
                       lr=base_lr,
                       weight_decay=cfg.weight_decay)
     write = SummaryWriter('logdir')
-
-    dummy_input = torch.Tensor(18, 3, 512, 512)
-    write.add_graph(model, (dummy_input))
+    #
+    # dummy_input = torch.Tensor(18, 3, 512, 512)
+    # with write:
+    #      write.add_graph(model, (dummy_input,))
     if args.resume:
         if isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
@@ -192,7 +193,7 @@ def train(train_loader, model, criterions, optimizer, epoch, clr, write):
         losses.update(loss.data.item(), inputs.size(0))
 
         write.add_scalar('loss', loss, itertion)
-        itertion=itertion+1
+        itertion = itertion + 1
 
         # compute gradient and do Optimization step
         optimizer.zero_grad()
@@ -207,7 +208,6 @@ def train(train_loader, model, criterions, optimizer, epoch, clr, write):
             write.add_image("global_outputs", concact_features1(global_outputs), step_counter)
             write.add_image("refine_output", concact_features1(refine_output), step_counter)
             step_counter += 1
-
 
     # change to evaluation mode
     model.eval()

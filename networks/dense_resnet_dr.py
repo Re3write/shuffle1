@@ -226,11 +226,11 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer_dr(block2, 512, layers[3], stride=1, dilation=[5, 9, 17])
         # 5,9,17
         laterals = []
-        laterals.append(self._lateral(256, 256))
-        laterals.append(self._lateral(512, 256))
-        laterals.append(self._lateral(1024, 512))
+        laterals.append(self._lateral(256, 256,3,1,2))
+        laterals.append(self._lateral(512, 256,1,0,1))
+        laterals.append(self._lateral(1024, 512,1,0,1))
         self.laterals = nn.ModuleList(laterals)
-        self.fuseconv3_3 = nn.Conv2d(1024, 1024, kernel_size=3, padding=1, bias=False)
+        self.fuseconv3_3 = nn.Conv2d(1024, 1024, kernel_size=3, padding=1,stride=1, bias=False)
         self.bn3_3 = nn.BatchNorm2d(1024)
         self.relu3_3 = nn.ReLU(inplace=True)
 
@@ -241,10 +241,10 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-    def _lateral(self, input_size, output_size):
+    def _lateral(self, input_size, output_size,kernel,pad,stride):
         layers = []
         layers.append(nn.Conv2d(input_size, output_size,
-                                kernel_size=1, stride=1, bias=False))
+                                kernel_size=kernel, stride=stride,padding=pad, bias=False))
         layers.append(nn.BatchNorm2d(output_size))
         layers.append(nn.ReLU(inplace=True))
 
@@ -306,7 +306,8 @@ class ResNet(nn.Module):
         fusex1 = self.laterals[0](x1)
         fusex2 = self.laterals[1](x2)
         fusex3 = self.laterals[2](x3)
-        fusex4 = self.relu3_3(self.bn3_3(torch.cat([fusex3, fusex2, fusex1]), 1))
+        fusex4=torch.cat([fusex3,fusex2,fusex1],dim=1)
+        fusex4 = self.relu3_3(self.bn3_3(self.fuseconv3_3(fusex4)))
         x4 = self.layer4(fusex4)
 
         return [x4, x3, x2, x1]
