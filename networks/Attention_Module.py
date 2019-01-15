@@ -168,36 +168,36 @@ class CAB_improve(nn.Module):
         x = torch.cat([x1, x2, x3, x4, x5], dim=1)
 
         out1 = self.global_pooling1(x)
-        out1 = self.bn11(self.conv11(out1))
+        out1 = self.conv11(out1)
         out1 = self.relu1(out1)
-        out1 = self.bn12(self.conv12(out1))
+        out1 = self.conv12(out1)
         out1 = self.sigmod1(out1)
 
         out2 = self.global_pooling2(x)
-        out2 = self.bn21(self.conv21(out2))
+        out2 = self.conv21(out2)
         out2 = self.relu2(out2)
-        out2 = self.bn22(self.conv22(out2))
+        out2 = self.conv22(out2)
         out2 = self.sigmod2(out2)
 
         out3 = self.global_pooling3(x)
-        out3 = self.bn31(self.conv31(out3))
+        out3 = self.conv31(out3)
         out3 = self.relu3(out3)
-        out3 = self.bn32(self.conv32(out3))
+        out3 = self.conv32(out3)
         out3 = self.sigmod3(out3)
 
         out4 = self.global_pooling4(x)
-        out4 = self.bn41(self.conv41(out4))
+        out4 = self.conv41(out4)
         out4 = self.relu4(out4)
-        out4 = self.bn42(self.conv42(out4))
+        out4 = self.conv42(out4)
         out4 = self.sigmod4(out4)
 
         out5 = self.global_pooling5(x)
-        out5 = self.bn51(self.conv51(out5))
+        out5 = self.conv51(out5)
         out5 = self.relu5(out5)
-        out5 = self.bn52(self.conv52(out5))
+        out5 = self.conv52(out5)
         out5 = self.sigmod5(out5)
 
-        final_output = out1 * x1 + out2 * x2 + out3 * x3 + out4 * x4 + out5 * x5
+        final_output = F.relu(self.bn11(out1 * x1 + out2 * x2 + out3 * x3 + out4 * x4 + out5 * x5))
         return final_output
 
 
