@@ -3,7 +3,8 @@
 # from .resnet_dr import *
 import torch.nn as nn
 import torch
-from .globalNet import globalNet
+# from .globalNet import globalNet
+from .globalNet_newfuse import globalNet
 from .refineNet import refineNet
 from .dense_resnet_dr import *
 
