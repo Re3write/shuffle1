@@ -13,14 +13,20 @@ class CPN(nn.Module):
     def __init__(self, resnet, output_shape, num_class, pretrained=True):
         super(CPN, self).__init__()
         channel_settings = [2048, 1024, 512, 256]
-        self.resnet = resnet
-        self.global_net = globalNet(channel_settings, output_shape, num_class)
-        self.refine_net = refineNet(channel_settings[-1], output_shape, num_class)
+        self.resnet1 = resnet
+        self.global_net1 = globalNet(channel_settings, output_shape, num_class)
+        self.refine_net1 = refineNet(channel_settings[-1], output_shape, num_class)
+        self.resnet2=resnet
+        self.global_net2 = globalNet(channel_settings, output_shape, num_class)
+        self.refine_net2 = refineNet(channel_settings[-1], output_shape, num_class)
 
     def forward(self, x):
-        res_out = self.resnet(x)
-        global_fms, global_outs = self.global_net(res_out)
-        refine_out = self.refine_net(global_fms)
+        res_out1 = self.resnet1(x)
+        global_fms1, global_outs1 = self.global_net1(res_out1)
+        refine_out1 = self.refine_net1(global_fms1)
+        res_out2 = self.resnet2(x)
+        global_fms2, global_outs2 = self.global_net2(res_out1)
+        refine_out2 = self.refine_net1(global_fms1)
 
         return global_outs, refine_out
 

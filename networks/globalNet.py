@@ -17,6 +17,12 @@ class globalNet(nn.Module):
             # if i != len(channel_settings) - 1 or i!=0 or i!=1:
             #     upsamples.append(self._upsample())
         self.laterals = nn.ModuleList(laterals)
+        self.deconv1 = nn.ConvTranspose2d(256, 256, kernel_size=3, stride=2, padding=1, output_padding=1)
+        self.deconv2 = nn.ConvTranspose2d(256, 256, kernel_size=3, stride=2, padding=1, output_padding=1)
+        self.deconv3 = nn.ConvTranspose2d(256, 256, kernel_size=3, stride=2, padding=1, output_padding=1)
+        # self.predict4 = self._predict(128, 24)
+        # self.predict3 = self._predict(128, 24)
+        # self.predict2 = self._predict(128, 24)
         self.dil6 = nn.Conv2d(256, 256, kernel_size=3, stride=1,
                               padding=1, bias=False,
                               dilation=1)
@@ -35,6 +41,7 @@ class globalNet(nn.Module):
 
         # self.upsamples = nn.ModuleList(upsamples)
         self.predict = self._predict(output_shape, num_class)
+
         # self.CAB = CAB_improve2(1024, 256)
 
         for m in self.modules():
@@ -87,9 +94,24 @@ class globalNet(nn.Module):
         x3 = F.relu(self.bn12(self.dil12(feature3)))
         x2 = F.relu(self.bn6(self.dil6(feature2)))
 
-        x3 = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x3)
-        x2 = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x2)
-        feature1 = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(feature1)
+        # global_out_x4 = self.predict4(x4)
+        # global_out_x3 = self.predict3(x3)
+        # global_out_x2 = self.predict2(x2)
+
+        # global_outs=self.predict4(x4)
+
+        x3_up = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x3)
+        x2_up = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x2)
+        feature1_up = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(feature1)
+
+        x3_de = self.deconv3(x3)
+        x2_de = self.deconv2(x2)
+        feature1_de = self.deconv1(feature1)
+
+        x3 = x3_de + x3_up
+        x2 = x2_de + x2_up
+        feature1 = feature1_de + feature1_up
+
         global_fm = torch.cat([x4, x3, x2, feature1], 1)
         global_fm = F.relu(self.bn_conv_1x1_3(self.conv_1x1_3(global_fm)))
         # global_fm = F.relu(self.bn_conv_1x1_3(self.CAB((x4,x3,x2,feature1))))

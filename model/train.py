@@ -39,7 +39,7 @@ step_counter = 0
 itertion = 0
 warnings.filterwarnings('ignore')
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1,2,3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'
 
 
 def main(args):
@@ -52,7 +52,7 @@ def main(args):
     model = network_dr.__dict__[cfg.model](cfg.output_shape, cfg.num_class, pretrained=True)
     # model.apply(layer_weights_init)
 
-    model = torch.nn.DataParallel(model, device_ids=[0, 1, 2]).cuda()
+    model = torch.nn.DataParallel(model, device_ids=[0, 1]).cuda()
     # # #loadmodel
     # checkpoint_file = os.path.join('checkpoint', 'epoch6checkpoint_dr_101SE.pth.tar')
     # checkpoint = torch.load(checkpoint_file)
@@ -170,17 +170,34 @@ def train(train_loader, model, criterions, optimizer, epoch, clr, write):
 
         # compute output
         global_outputs, refine_output = model(input_var)
+        # global_x4, global_x3, global_x2, global_output = global_outputs
+        global_output = global_outputs
         score_map = refine_output.data.cpu()
 
         loss = 0.
         global_loss_record = 0.
         refine_loss_record = 0.
         # comput global loss and refine loss
-        num_points = global_outputs.size()[1]
+        num_points = global_output.size()[1]
         global_label = target7 * (valid > 0.1).type(torch.FloatTensor).view(-1, num_points, 1, 1)
-        global_loss = criterion1(global_outputs, torch.autograd.Variable(global_label.cuda(async=True)))
+        global_loss = criterion1(global_output, torch.autograd.Variable(global_label.cuda(async=True)))
         loss += global_loss
         global_loss_record += global_loss.data.item()
+
+        # global_label = target9 * (valid > 0.1).type(torch.FloatTensor).view(-1, num_points, 1, 1)
+        # global_loss = criterion1(global_x2, torch.autograd.Variable(global_label.cuda(async=True)))/2.0
+        # loss += global_loss
+        # global_loss_record += global_loss.data.item()
+        #
+        # global_label = target11 * (valid > 0.1).type(torch.FloatTensor).view(-1, num_points, 1, 1)
+        # global_loss = criterion1(global_x3, torch.autograd.Variable(global_label.cuda(async=True)))/2.0
+        # loss += global_loss
+        # global_loss_record += global_loss.data.item()
+        #
+        # global_label = target15 * (valid > 0.1).type(torch.FloatTensor).view(-1, num_points, 1, 1)
+        # global_loss = criterion1(global_x4, torch.autograd.Variable(global_label.cuda(async=True)))/2.0
+        # loss += global_loss
+        # global_loss_record += global_loss.data.item()
 
         refine_loss = criterion2(refine_output, refine_target_var)
         refine_loss = refine_loss.mean(dim=3).mean(dim=2)
@@ -205,7 +222,7 @@ def train(train_loader, model, criterions, optimizer, epoch, clr, write):
                   .format(i, loss.data.item(), global_loss_record,
                           refine_loss_record, losses.avg))
         elif (i % 3000 == 0):
-            write.add_image("global_outputs", concact_features1(global_outputs), step_counter)
+            write.add_image("global_outputs", concact_features1(global_output), step_counter)
             write.add_image("refine_output", concact_features1(refine_output), step_counter)
             step_counter += 1
 
