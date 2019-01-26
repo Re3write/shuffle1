@@ -100,17 +100,17 @@ class globalNet(nn.Module):
 
         # global_outs=self.predict4(x4)
 
-        x3_up = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x3)
-        x2_up = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x2)
-        feature1_up = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(feature1)
+        x3 = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x3)
+        x2 = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(x2)
+        feature1 = nn.Upsample((128, 128), mode='bilinear', align_corners=True)(feature1)
 
-        x3_de = self.deconv3(x3)
-        x2_de = self.deconv2(x2)
-        feature1_de = self.deconv1(feature1)
-
-        x3 = x3_de + x3_up
-        x2 = x2_de + x2_up
-        feature1 = feature1_de + feature1_up
+        # x3_de = self.deconv3(x3)
+        # x2_de = self.deconv2(x2)
+        # feature1_de = self.deconv1(feature1)
+        #
+        # x3 = x3_de + x3_up
+        # x2 = x2_de + x2_up
+        # feature1 = feature1_de + feature1_up
 
         global_fm = torch.cat([x4, x3, x2, feature1], 1)
         global_fm = F.relu(self.bn_conv_1x1_3(self.conv_1x1_3(global_fm)))

@@ -98,3 +98,45 @@ class refineNet(nn.Module):
         # out =F.relu(self.bn(out))
         out = self.final_predict(out)
         return out
+
+
+class refineNet_withoutfinal_out(nn.Module):
+    def __init__(self, lateral_channel, out_shape, num_class):
+        super(refineNet_withoutfinal_out, self).__init__()
+
+        self.cascade = self._make_layer(lateral_channel, out_shape)
+        self.final_predict = self._predict(lateral_channel, num_class)
+        self.aasp = ASPP()
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+        # self.spA = SpatialAttention(7)
+        # self.bn=nn.BatchNorm2d(256)
+
+    def _make_layer(self, input_channel, output_shape):
+        layers = []
+        for i in range(2):
+            layers.append(Bottleneck(input_channel, 128))
+        # layers.append(nn.Upsample(size=output_shape, mode='bilinear', align_corners=True))
+        return nn.Sequential(*layers)
+
+    def _predict(self, input_channel, num_class):
+        layers = []
+        layers.append(Bottleneck(input_channel, 128))
+        # layers.append(SELayer(256))
+        layers.append(nn.Conv2d(256, num_class,
+                                kernel_size=3, stride=1, padding=1, bias=False))
+        layers.append(nn.BatchNorm2d(num_class))
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.cascade(x)
+        out = self.aasp(x)
+        # out = self.spA(out) * out
+        # out =F.relu(self.bn(out))
+        result = self.final_predict(out)
+        return out,result
